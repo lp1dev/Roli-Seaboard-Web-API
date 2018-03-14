@@ -1,6 +1,7 @@
 # Roli-Seaboard-Web-API
 
-JavaScript (EcmaScript 6) API using the [Web Audio](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API) and [Web MIDI](https://webaudio.github.io/web-midi-api/] APIs to interpret MIDI messages for a ROLI Seaboard controller.
+JavaScript (EcmaScript 6) API using the [Web Audio](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API) and 
+[Web MIDI](https://webaudio.github.io/web-midi-api/) APIs to interpret MIDI messages for a ROLI Seaboard controller.
 
 ### Files
 - js/**MIDI.js** : A set of Audio helpers to handle MIDI messages and play digital sounds
