@@ -3,12 +3,12 @@
 JavaScript (EcmaScript 6) API using the [Web Audio](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API) and [Web MIDI](https://webaudio.github.io/web-midi-api/] APIs to interpret MIDI messages for a ROLI Seaboard controller.
 
 ### Files
-    - js/**MIDI.js** : A set of Audio helpers to handle MIDI messages and play digital sounds
-    - js/**Seaboard.js** : A class which, updated by the parsed messages from MIDI.js stores useful information on the Seaboard state and channels
+- js/**MIDI.js** : A set of Audio helpers to handle MIDI messages and play digital sounds
+- js/**Seaboard.js** : A class which stores and format useful information about the Seaboard's state and channels
 
 ### Examples
 
-#### Example 1
+#### [Example 1](https://github.com/lp1dev/Roli-Seaboard-Web-API/blob/master/examples/example1/example1.js)
 
 Very basic usage example using Webpack. Displaying the developer-friendly formated Seaboard's status messages.
 
@@ -40,9 +40,15 @@ const displayParsedMIDIMessage = (message) => {
 }
 ```
 
+
 ### More Examples
 
 If you need more examples, please check my Seaboard-related projects here: [SeaboardHacks](https://github.com/lp1dev/SeaboardHacks).
+
+These specific parts might be interesting if you want to hack something for the Seaboard :
+
+- [Visualizer.vue](https://github.com/lp1dev/SeaboardHacks/blob/master/roliweb/src/components/Visualizer.vue): A VueJS component diplaying the Seaboard's input with accurate X and Y positions
+- [Synthetizers.js](https://github.com/lp1dev/SeaboardHacks/blob/master/utils/Synthetizers.js): Usage example of the synthetisers classes
 
 ## License
  
