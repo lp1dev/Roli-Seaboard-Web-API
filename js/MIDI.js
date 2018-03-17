@@ -4,6 +4,7 @@
  */
 
 const defaultSynthConf = {
+  gain: 0,
   fadeTime: 0.2, // The fade in and out duration
   type: 'sine' // "sine", "square", "sawtooth" or "triangle"
 }
@@ -18,10 +19,12 @@ class Synthetizer {
   constructor (name, configuration = defaultSynthConf) {
     this.name = name
     this.configuration = configuration
+    this.configuration.gain = this.configuration.gain || 0
     this.oscillators = {}
     this.audioContext = MIDIController.audioContext
     this.gainNodes = {}
     this.notes = {}
+    this.type = 'classic'
   }
   handleMessage (message) {
     switch (message.type) {
@@ -34,15 +37,17 @@ class Synthetizer {
         this.notes[message.channel] = message.note
         break
       case 'NOTE OFF':
-        this.gainNodes[message.channel].gain.setTargetAtTime(0, this.audioContext.currentTime, this.configuration.fadeTime)
+        this.gainNodes[message.channel].gain.linearRampToValueAtTime(0, this.audioContext.currentTime + this.configuration.fadeTime)
         break
       case 'Channel Pressure (After-touch)':
-        this.gainNodes[message.channel].gain.setTargetAtTime(message.pressure / 100, this.audioContext.currentTime, this.configuration.fadeTime)
+        console.log('gain', message.pressure / (128 + this.configuration.gain))
+        this.gainNodes[message.channel].gain.linearRampToValueAtTime(message.pressure / (128 + this.configuration.gain),
+        this.audioContext.currentTime + 0.1)
         break
       case 'Pitch Bend Change':
         const noteModulation = this.notes[message.channel] + message.pitchBend
         if (!isNaN(noteModulation)) {
-          this.oscillators[message.channel].frequency.value = MIDIController.noteToFrequency(noteModulation)
+          this.oscillators[message.channel].frequency.exponentialRampToValueAtTime(MIDIController.noteToFrequency(noteModulation), this.audioContext.currentTime + 0.1)
         }
         break
     }
@@ -79,10 +84,14 @@ class Synthetizer {
 class CustomSynthetizer extends Synthetizer {
   constructor (name, configuration = defaultSynthConf, sin, cosin, disableNormalization = false) {
     super(name, configuration)
-    this.periodicWave = this.audioContext.createPeriodicWave(sin, cosin, {disableNormalization: disableNormalization})
+    if (MIDIController.compatibleBrowser) {
+      this.periodicWave = this.audioContext.createPeriodicWave(sin, cosin, {disableNormalization: disableNormalization})
+    }
     this.sin = sin
     this.cosin = cosin
     this.custom = true
+    this.amplitude = Math.max(...this.sin) || (Math.min(...this.sin) * -1)
+    this.type = 'custom'
   }
   initOscillator (note, channel) {
     const frequency = MIDIController.noteToFrequency(note)
@@ -120,6 +129,8 @@ class FunctionSynthetizer extends CustomSynthetizer {
       sin.push(funct(i))
     }
     super(name, configuration, sin, cos, disableNormalization)
+    this.function = funct
+    this.type = 'function'
   }
 }
 
@@ -157,6 +168,18 @@ class MIDIControllerClass {
       } else {
         reject(new Error('Incompatible browser'))
       }
+    })
+  }
+  getInputs () {
+    return new Promise((resolve, reject) => {
+      this
+      .requestMIDIAccess()
+      .then(MIDIAccess => {
+        const inputs = []
+        MIDIAccess.inputs.forEach(MIDIInput => inputs.push(MIDIInput))
+        resolve(inputs)
+      })
+      .catch(error => reject(error))
     })
   }
   getInputsByManufacturer (manufacturer) {

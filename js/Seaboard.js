@@ -20,7 +20,6 @@ class Seaboard {
     })
   }
   onMessage (message) {
-    console.log('onMessage')
     const parsedMessage = MIDIController.parseMessage(message.data)
     this.channels[parsedMessage.channel] = this.channels[parsedMessage.channel] || {posY: 0}
     switch (parsedMessage.type) {
