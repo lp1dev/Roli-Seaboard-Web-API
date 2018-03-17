@@ -41,7 +41,7 @@ class Synthetizer {
         break
       case 'Channel Pressure (After-touch)':
         console.log('gain', message.pressure / (128 + this.configuration.gain))
-        this.gainNodes[message.channel].gain.linearRampToValueAtTime(message.pressure / (128 + this.configuration.gain),
+        this.gainNodes[message.channel].gain.linearRampToValueAtTime(message.pressure / (128 + (this.configuration.gain || 0)),
         this.audioContext.currentTime + 0.1)
         break
       case 'Pitch Bend Change':
