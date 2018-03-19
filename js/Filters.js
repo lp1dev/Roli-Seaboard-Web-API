@@ -14,6 +14,7 @@ class Filter {
   constructor (type, frequency, gain, q, audioContext = MIDIController.audioContext) {
     this.type = type
     this.frequency = frequency
+    this.defaultFrequency = frequency
     this.gain = gain
     this.maxGain = 100
     this.types = FilterTypes

@@ -23,57 +23,64 @@ class SubstractiveSynthetizer {
     this.name = name
     this.configuration = configuration
     this.configuration.gain = this.configuration.gain || 0
-    this.oscillators = {}
-    this.gainNodes = {}
-    this.notes = {}
+    this.channels = {}
     this.type = 'classic'
     this.audioContext = audioContext
   }
   handleMessage (message) {
     switch (message.type) {
       case 'Note ON':
-        this.message = message
-        if (!this.oscillators[message.channel]) {
+        if (!this.channels[message.channel]) {
           this.initOscillator(message.note, message.channel)
         }
-        this.oscillators[message.channel].frequency.value = MIDIController.noteToFrequency(message.note)
-        this.notes[message.channel] = message.note
+        this.message = message
+        this.channels[message.channel]['oscillator'].frequency.value = MIDIController.noteToFrequency(message.note)
+        this.channels[message.channel]['note'] = message.note
         break
-      case 'NOTE OFF':
-        this.gainNodes[message.channel].gain.linearRampToValueAtTime(0, this.audioContext.currentTime + this.configuration.fadeTime)
+      case 'Note OFF':
+        this.channels[message.channel]['startingPosY'] = null
+        this.filter.updateFrequency(this.filter.defaultFrequency)
+        this.channels[message.channel]['gainNode'].gain.linearRampToValueAtTime(0, this.audioContext.currentTime + this.configuration.fadeTime)
         break
       case 'Channel Pressure (After-touch)':
-        this.gainNodes[message.channel].gain.linearRampToValueAtTime(message.pressure / (128 + (this.configuration.gain || 0)),
+        this.channels[message.channel]['gainNode'].gain.linearRampToValueAtTime(message.pressure / (128 + (this.configuration.gain || 0)),
         this.audioContext.currentTime + 0.1)
         break
       case 'Pitch Bend Change':
-        const noteModulation = this.notes[message.channel] + message.pitchBend
-        if (!isNaN(noteModulation)) {
-          this.oscillators[message.channel].frequency.exponentialRampToValueAtTime(MIDIController.noteToFrequency(noteModulation), this.audioContext.currentTime + 0.1)
+        if (this.channels[message.channel] && this.channels[message.channel]['note']) {
+          const noteModulation = this.channels[message.channel]['note'] + message.pitchBend
+          if (!isNaN(noteModulation)) {
+            this.channels[message.channel]['oscillator'].frequency.exponentialRampToValueAtTime(MIDIController.noteToFrequency(noteModulation), this.audioContext.currentTime + 0.1)
+          }
         }
         break
       case 'Control change':
-        const filterFrequency = message.controlChange * 10
-        this.filter.updateFrequency(filterFrequency)
+        if (!this.channels[message.channel]) {
+          break
+        } else if (!this.channels[message.channel]['startingPosY']) {
+          this.channels[message.channel]['startingPosY'] = message.controlChange
+        } else {
+          const frequencyVariation = (message.controlChange - this.channels[message.channel]['startingPosY'])
+          this.filter.updateFrequency(this.filter.defaultFrequency + (frequencyVariation * 10))
+        }
         break
     }
   }
   initOscillator (note, channel) {
     const frequency = MIDIController.noteToFrequency(note)
-    let gainNode = this.gainNodes[channel]
-    let oscillator = this.oscillators[channel]
+    this.channels[channel] = this.channels[channel] || {}
+    let gainNode = this.channels[channel]['gainNode']
+    let oscillator = this.channels[channel]['oscillator']
     if (!gainNode) {
       gainNode = this.audioContext.createGain()
-      this.gainNodes[channel] = gainNode
       gainNode.gain.value = 0
       gainNode.connect(this.filter.biquadFilter)
+      this.channels[channel]['gainNode'] = gainNode
     }
     if (!oscillator) {
       oscillator = this.audioContext.createOscillator()
-      if (oscillator.type !== this.configuration.type) {
-        oscillator.type = this.configuration.type
-      }
-      this.oscillators[channel] = oscillator
+      oscillator.type = this.configuration.type
+      this.channels[channel]['oscillator'] = oscillator
       oscillator.connect(gainNode)
       this.filter.connect(this.audioContext.destination)
     }
@@ -103,19 +110,20 @@ class CustomSubstractiveSynthetizer extends SubstractiveSynthetizer {
   }
   initOscillator (note, channel) {
     const frequency = MIDIController.noteToFrequency(note)
-    let gainNode = this.gainNodes[channel]
-    let oscillator = this.oscillators[channel]
+    this.channels[channel] = this.channels[channel] || {}
+    let gainNode = this.channels[channel]['gainNode']
+    let oscillator = this.channels[channel]['oscillator']
     if (!gainNode) {
       gainNode = this.audioContext.createGain()
-      this.gainNodes[channel] = gainNode
-      gainNode.gain.value = 0
       gainNode.connect(this.filter.biquadFilter)
+      gainNode.gain.value = 0
+      this.channels[channel]['gainNode'] = gainNode
     }
     if (!oscillator) {
       oscillator = this.audioContext.createOscillator()
       oscillator.setPeriodicWave(this.periodicWave)
-      this.oscillators[channel] = oscillator
       oscillator.connect(gainNode)
+      this.channels[channel]['oscillator'] = oscillator
       this.filter.connect(this.audioContext.destination)
     }
     oscillator.frequency.value = frequency
