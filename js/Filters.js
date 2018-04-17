@@ -13,6 +13,7 @@ import { MIDIController } from './MIDI'
 class Filter {
   constructor (type, frequency, gain, q, audioContext = MIDIController.audioContext) {
     this.type = type
+    this.name = type
     this.frequency = frequency
     this.defaultFrequency = frequency
     this.gain = gain

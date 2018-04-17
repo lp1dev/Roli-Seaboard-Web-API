@@ -25,14 +25,14 @@ class SubstractiveSynthetizer {
     this.configuration.gain = this.configuration.gain || 0
     this.channels = {}
     this.type = 'classic'
+    this.filter = filter
+    this.numChannels = 12
     this.audioContext = audioContext
+    this.initOscillators()
   }
   handleMessage (message) {
     switch (message.type) {
       case 'Note ON':
-        if (!this.channels[message.channel]) {
-          this.initOscillator(message.note, message.channel)
-        }
         this.message = message
         this.channels[message.channel]['oscillator'].frequency.value = MIDIController.noteToFrequency(message.note)
         this.channels[message.channel]['note'] = message.note
@@ -66,26 +66,29 @@ class SubstractiveSynthetizer {
         break
     }
   }
-  initOscillator (note, channel) {
-    const frequency = MIDIController.noteToFrequency(note)
-    this.channels[channel] = this.channels[channel] || {}
-    let gainNode = this.channels[channel]['gainNode']
-    let oscillator = this.channels[channel]['oscillator']
-    if (!gainNode) {
+  initOscillators () {
+    // const frequency = MIDIController.noteToFrequency(note)
+    for (let channel = 0; channel < this.numChannels; channel++) {
+      this.channels[channel] = this.channels[channel] || {}
+      let gainNode = this.channels[channel]['gainNode']
+      let oscillator = this.channels[channel]['oscillator']
+      // Initializing GainNode
       gainNode = this.audioContext.createGain()
       gainNode.gain.value = 0
       gainNode.connect(this.filter.biquadFilter)
       this.channels[channel]['gainNode'] = gainNode
-    }
-    if (!oscillator) {
+      // Initializing oscillator
       oscillator = this.audioContext.createOscillator()
       oscillator.type = this.configuration.type
       this.channels[channel]['oscillator'] = oscillator
       oscillator.connect(gainNode)
       this.filter.connect(this.audioContext.destination)
+      // oscillator.frequency.value = frequency
+      oscillator.start()
     }
-    oscillator.frequency.value = frequency
-    oscillator.start()
+  }
+  connect (output) {
+
   }
 }
 
